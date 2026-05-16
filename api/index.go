@@ -25,34 +25,6 @@ func init() {
 	app = gin.Default()
 	app.HandleMethodNotAllowed = true
 
-	// 1. CORS MUST be first
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	config.AllowHeaders = append(config.AllowHeaders, "Authorization", "Content-Type", "X-API-Key")
-	config.AllowMethods = append(config.AllowMethods, "GET", "POST", "PUT", "DELETE", "OPTIONS")
-	app.Use(cors.New(config))
-
-	// 2. Global Security & CORS
-	app.Use(func(c *gin.Context) {
-		// FORCE CORS HEADERS ON EVERY RESPONSE
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-API-Key")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(200)
-			return
-		}
-
-		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
-		c.Writer.Header().Set("X-Frame-Options", "DENY")
-		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
-		
-		c.Next()
-	})
-
 	// Public routes
 	app.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "SnapCheats API is online"})
