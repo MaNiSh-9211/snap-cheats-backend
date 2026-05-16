@@ -24,8 +24,21 @@ func init() {
 	app = gin.Default()
 	app.HandleMethodNotAllowed = true
 
-	// Manual OPTIONS handler (headers are now handled by vercel.json)
+	// UNIVERSAL CORS: Echoes the requesting Origin back to the browser.
+	// This is the "Allow All Origins" strategy that works with credentials.
 	app.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-API-Key, X-Requested-With")
+		c.Writer.Header().Set("Vary", "Origin")
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
