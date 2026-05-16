@@ -1,15 +1,14 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"snap-monolith/backend/internal/db"
 	"snap-monolith/backend/internal/handlers"
 	"snap-monolith/backend/internal/middleware"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -65,23 +64,51 @@ func init() {
 	}
 }
 
+// allowedOrigins returns the list of permitted frontend origins.
+// Add your Vercel preview URLs here as needed.
+func allowedOrigin(origin string) string {
+	// Read from env var so you can configure per-environment without redeploying
+	if envOrigin := os.Getenv("ALLOWED_ORIGIN"); envOrigin != "" {
+		for _, o := range strings.Split(envOrigin, ",") {
+			if strings.TrimSpace(o) == origin {
+				return origin
+			}
+		}
+	}
+	// Hardcoded fallback: your production frontend URL
+	allowed := []string{
+		"https://snap-cheats-frontend.vercel.app",
+		// Add preview deployment URLs below if needed
+	}
+	for _, o := range allowed {
+		if o == origin {
+			return origin
+		}
+	}
+	return ""
+}
+
 // Handler is the main entrypoint for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
-	// 1. Manually set CORS headers for EVERY request at the entry point
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// 1. Echo back a specific allowed origin (wildcard + credentials is illegal per CORS spec)
+	origin := r.Header.Get("Origin")
+	if matched := allowedOrigin(origin); matched != "" {
+		w.Header().Set("Access-Control-Allow-Origin", matched)
+	} else {
+		// No origin header (e.g. curl/postman) or unknown origin — still serve the request
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Vary", "Origin")
 
 	// 2. Handle preflight OPTIONS request immediately
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	// 3. Hand off to Gin for all other requests
 	app.ServeHTTP(w, r)
 }
-
-
-
