@@ -35,16 +35,9 @@ func init() {
 
 	// Improved CORS configuration
 	config := cors.DefaultConfig()
-	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
-	if allowedOrigins != "" {
-		config.AllowOrigins = []string{allowedOrigins}
-	} else {
-		// If no origins specified, default to local development port for Vite
-		config.AllowOrigins = []string{"http://localhost:5173"} 
-	}
-	config.AllowHeaders = append(config.AllowHeaders, "Authorization", "Content-Type")
+	config.AllowAllOrigins = true
+	config.AllowHeaders = append(config.AllowHeaders, "Authorization", "Content-Type", "X-API-Key")
 	config.AllowMethods = append(config.AllowMethods, "GET", "POST", "PUT", "DELETE", "OPTIONS")
-	config.AllowCredentials = true
 	app.Use(cors.New(config))
 
 	// Public routes
