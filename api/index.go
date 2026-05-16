@@ -8,7 +8,7 @@ import (
 	"snap-monolith/backend/internal/handlers"
 	"snap-monolith/backend/internal/middleware"
 
-	"github.com/gin-contrib/cors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -24,18 +24,14 @@ func init() {
 	app = gin.Default()
 	app.HandleMethodNotAllowed = true
 
-	// CORS Configuration
-	config := cors.DefaultConfig()
-	config.AllowCredentials = true
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-API-Key"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"}
-	
-	config.AllowOriginFunc = func(origin string) bool {
-		// Extremely permissive for now to fix the issue
-		return true 
-	}
-	
-	app.Use(cors.New(config))
+	// Manual OPTIONS handler (headers are now handled by vercel.json)
+	app.Use(func(c *gin.Context) {
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
 
 	// Public routes
 	app.GET("/", func(c *gin.Context) {
