@@ -24,21 +24,27 @@ func init() {
 
 	app = gin.Default()
 
-	// Robust Security Headers
-	app.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
-		c.Writer.Header().Set("X-Frame-Options", "DENY")
-		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
-		c.Writer.Header().Set("Content-Security-Policy", "default-src 'self'")
-		c.Next()
-	})
-
-	// Improved CORS configuration
+	// 1. CORS MUST be first
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowHeaders = append(config.AllowHeaders, "Authorization", "Content-Type", "X-API-Key")
 	config.AllowMethods = append(config.AllowMethods, "GET", "POST", "PUT", "DELETE", "OPTIONS")
 	app.Use(cors.New(config))
+
+	// 2. Global Security & Preflight Bypass
+	app.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+		c.Writer.Header().Set("X-Frame-Options", "DENY")
+		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
+		c.Writer.Header().Set("Content-Security-Policy", "default-src 'self'")
+		
+		// CRITICAL: Handle OPTIONS preflight early to avoid hitting any AuthMiddleware
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
 
 	// Public routes
 	app.POST("/api/login", handlers.Login)
