@@ -67,6 +67,19 @@ func init() {
 
 // Handler is the main entrypoint for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
+	// 1. Manually set CORS headers for EVERY request at the entry point
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	// 2. Handle preflight OPTIONS request immediately
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// 3. Hand off to Gin for all other requests
 	app.ServeHTTP(w, r)
 }
 
