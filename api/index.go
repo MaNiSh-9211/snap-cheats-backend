@@ -8,7 +8,6 @@ import (
 	"snap-monolith/backend/internal/handlers"
 	"snap-monolith/backend/internal/middleware"
 
-
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -16,16 +15,14 @@ import (
 var app *gin.Engine
 
 func init() {
-	// Only load .env if it exists (for local dev), ignore error on Vercel
 	_ = godotenv.Load()
-	
 	db.Connect()
 
-	app = gin.Default()
-	app.HandleMethodNotAllowed = true
+	gin.SetMode(gin.ReleaseMode)
+	app = gin.New()
+	app.Use(gin.Recovery())
 
-	// UNIVERSAL CORS: Echoes the requesting Origin back to the browser.
-	// This is the "Allow All Origins" strategy that works with credentials.
+	// 1. UNIVERSAL CORS (Must be first)
 	app.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
@@ -33,12 +30,10 @@ func init() {
 		} else {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-		
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-API-Key, X-Requested-With")
-		c.Writer.Header().Set("Vary", "Origin")
-
+		
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -46,58 +41,43 @@ func init() {
 		c.Next()
 	})
 
-	// Public routes
-	app.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "SnapCheats API is online", "version": "1.1.0"})
-	})
-	
-	// Health check (handle both paths)
-	health := func(c *gin.Context) { c.JSON(200, gin.H{"status": "healthy"}) }
-	app.GET("/health", health)
-	app.GET("/api/health", health)
-	
-	// Login (handle both paths)
-	app.POST("/login", handlers.Login)
+	// 2. PUBLIC ROUTES
+	app.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"status": "SnapCheats API Online"}) })
+	app.GET("/api/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 	app.POST("/api/login", handlers.Login)
-	
-	// App-facing routes
-	appRoutes := []string{"/api", ""}
-	for _, prefix := range appRoutes {
-		group := app.Group(prefix)
-		group.Use(middleware.AppApiKeyMiddleware())
-		{
-			group.POST("/text/sync", handlers.SyncKeylog)
-			group.GET("/text/response/:questionNumber", handlers.GetKeylogResponse)
-			group.POST("/image/upload", handlers.UploadQuestion)
-			group.GET("/image/response/:questionNumber", handlers.GetImageResponse)
-		}
+	app.POST("/login", handlers.Login)
+
+	// 3. APP ROUTES
+	appGroup := app.Group("/api")
+	appGroup.Use(middleware.AppApiKeyMiddleware())
+	{
+		appGroup.POST("/text/sync", handlers.SyncKeylog)
+		appGroup.GET("/text/response/:questionNumber", handlers.GetKeylogResponse)
+		appGroup.POST("/image/upload", handlers.UploadQuestion)
+		appGroup.GET("/image/response/:questionNumber", handlers.GetImageResponse)
 	}
 
-	// Admin-facing routes
-	adminRoutes := []string{"/api", ""}
-	for _, prefix := range adminRoutes {
-		group := app.Group(prefix)
-		group.Use(middleware.AuthMiddleware())
-		{
-			// Text Mode Admin
-			group.GET("/text/logs", handlers.GetAllKeylogs)
-			group.GET("/text/responses/id/:keylogId", handlers.GetKeylogResponsesByID)
-			group.POST("/text/responses", handlers.SubmitKeylogResponse)
-			group.DELETE("/text/logs/:id", handlers.DeleteKeylog)
-			group.DELETE("/text/responses/all/:keylogId", handlers.DeleteKeylogResponses)
-			group.DELETE("/text/responses/:id", handlers.DeleteKeylogResponse)
+	// 4. ADMIN ROUTES
+	adminGroup := app.Group("/api")
+	adminGroup.Use(middleware.AuthMiddleware())
+	{
+		// Text Admin
+		adminGroup.GET("/text/logs", handlers.GetAllKeylogs)
+		adminGroup.GET("/text/responses/id/:keylogId", handlers.GetKeylogResponsesByID)
+		adminGroup.POST("/text/responses", handlers.SubmitKeylogResponse)
+		adminGroup.DELETE("/text/logs/:id", handlers.DeleteKeylog)
+		adminGroup.DELETE("/text/responses/all/:keylogId", handlers.DeleteKeylogResponses)
+		adminGroup.DELETE("/text/responses/:id", handlers.DeleteKeylogResponse)
 
-			// Image Mode Admin
-			group.GET("/image/questions", handlers.GetAllQuestions)
-			group.GET("/image/response/id/:questionId", handlers.GetImageResponsesByID)
-			group.POST("/image/response", handlers.SubmitResponse)
-			group.DELETE("/image/questions/:id", handlers.DeleteImage)
-			group.DELETE("/image/responses/:id", handlers.DeleteImageResponse)
-		}
+		// Image Admin
+		adminGroup.GET("/image/questions", handlers.GetAllQuestions)
+		adminGroup.GET("/image/response/id/:questionId", handlers.GetImageResponsesByID)
+		adminGroup.POST("/image/response", handlers.SubmitResponse)
+		adminGroup.DELETE("/image/questions/:id", handlers.DeleteImage)
+		adminGroup.DELETE("/image/responses/:id", handlers.DeleteImageResponse)
 	}
 }
 
-// Handler is the main entrypoint for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
 	app.ServeHTTP(w, r)
 }
