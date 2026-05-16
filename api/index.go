@@ -23,6 +23,7 @@ func init() {
 	db.Connect()
 
 	app = gin.Default()
+	app.HandleMethodNotAllowed = true
 
 	// 1. CORS MUST be first
 	config := cors.DefaultConfig()
