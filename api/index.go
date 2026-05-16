@@ -64,52 +64,63 @@ func init() {
 	}
 }
 
-// allowedOrigins returns the list of permitted frontend origins.
-// Add your Vercel preview URLs here as needed.
-func allowedOrigin(origin string) string {
-	// Read from env var so you can configure per-environment without redeploying
+// allowedOrigin returns true if the origin is permitted.
+func isOriginAllowed(origin string) bool {
+	if origin == "" {
+		return true
+	}
+	
+	// 1. Allow Localhost
+	if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") {
+		return true
+	}
+
+	// 2. Allow Vercel subdomains
+	if strings.HasSuffix(origin, ".vercel.app") {
+		return true
+	}
+
+	// 3. Check environment variable
 	if envOrigin := os.Getenv("ALLOWED_ORIGIN"); envOrigin != "" {
 		for _, o := range strings.Split(envOrigin, ",") {
 			if strings.TrimSpace(o) == origin {
-				return origin
+				return true
 			}
 		}
 	}
-	// Hardcoded fallback: your production frontend URL
+
+	// 4. Hardcoded fallbacks
 	allowed := []string{
 		"https://snapcheats-frontend.vercel.app",
 		"https://snap-cheats-frontend.vercel.app",
-		// Add preview deployment URLs below if needed
 	}
 	for _, o := range allowed {
 		if o == origin {
-			return origin
+			return true
 		}
 	}
-	return ""
+	return false
 }
 
 // Handler is the main entrypoint for Vercel serverless functions
 func Handler(w http.ResponseWriter, r *http.Request) {
-	// 1. Echo back a specific allowed origin (wildcard + credentials is illegal per CORS spec)
+	// Add CORS headers to the response writer directly for preflights
 	origin := r.Header.Get("Origin")
-	if matched := allowedOrigin(origin); matched != "" {
-		w.Header().Set("Access-Control-Allow-Origin", matched)
+	if isOriginAllowed(origin) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 	} else {
-		// No origin header (e.g. curl/postman) or unknown origin — still serve the request
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
+	
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Vary", "Origin")
 
-	// 2. Handle preflight OPTIONS request immediately
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	// 3. Hand off to Gin for all other requests
 	app.ServeHTTP(w, r)
 }
