@@ -47,6 +47,12 @@ func init() {
 	})
 
 	// Public routes
+	app.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "SnapCheats API is online"})
+	})
+	app.GET("/api/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "healthy"})
+	})
 	app.POST("/api/login", handlers.Login)
 	
 	// App-facing routes (Protected by shared APP_API_KEY)
