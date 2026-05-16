@@ -9,7 +9,6 @@ import (
 	"snap-monolith/backend/internal/handlers"
 	"snap-monolith/backend/internal/middleware"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -24,6 +23,20 @@ func init() {
 
 	app = gin.Default()
 
+	// CORS — must be before any auth middleware
+	app.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-API-Key, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	// Robust Security Headers
 	app.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
@@ -32,13 +45,6 @@ func init() {
 		c.Writer.Header().Set("Content-Security-Policy", "default-src 'self'")
 		c.Next()
 	})
-
-	// Improved CORS configuration
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	config.AllowHeaders = append(config.AllowHeaders, "Authorization", "Content-Type", "X-API-Key")
-	config.AllowMethods = append(config.AllowMethods, "GET", "POST", "PUT", "DELETE", "OPTIONS")
-	app.Use(cors.New(config))
 
 	// Public routes
 	app.POST("/api/login", handlers.Login)

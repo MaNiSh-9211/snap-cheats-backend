@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"os"
 
 	"snap-monolith/backend/internal/db"
 	"snap-monolith/backend/internal/handlers"
