@@ -1,0 +1,6 @@
+Install Dependencies:
+go mod tidy
+go mod download
+
+Run Project:
+go run cmd/server/main.go
