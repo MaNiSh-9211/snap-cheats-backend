@@ -41,7 +41,10 @@ func init() {
 		
 		// CRITICAL: Handle OPTIONS preflight early to avoid hitting any AuthMiddleware
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-API-Key")
+			c.AbortWithStatus(200)
 			return
 		}
 		c.Next()
