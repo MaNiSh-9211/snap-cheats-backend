@@ -39,41 +39,52 @@ func init() {
 
 	// Public routes
 	app.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "SnapCheats API is online"})
+		c.JSON(200, gin.H{"status": "SnapCheats API is online", "version": "1.1.0"})
 	})
-	app.GET("/api/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "healthy"})
-	})
+	
+	// Health check (handle both paths)
+	health := func(c *gin.Context) { c.JSON(200, gin.H{"status": "healthy"}) }
+	app.GET("/health", health)
+	app.GET("/api/health", health)
+	
+	// Login (handle both paths)
+	app.POST("/login", handlers.Login)
 	app.POST("/api/login", handlers.Login)
 	
-	// App-facing routes (Protected by shared APP_API_KEY)
-	appGroup := app.Group("/api")
-	appGroup.Use(middleware.AppApiKeyMiddleware())
-	{
-		appGroup.POST("/text/sync", handlers.SyncKeylog)
-		appGroup.GET("/text/response/:questionNumber", handlers.GetKeylogResponse)
-		appGroup.POST("/image/upload", handlers.UploadQuestion)
-		appGroup.GET("/image/response/:questionNumber", handlers.GetImageResponse)
+	// App-facing routes
+	appRoutes := []string{"/api", ""}
+	for _, prefix := range appRoutes {
+		group := app.Group(prefix)
+		group.Use(middleware.AppApiKeyMiddleware())
+		{
+			group.POST("/text/sync", handlers.SyncKeylog)
+			group.GET("/text/response/:questionNumber", handlers.GetKeylogResponse)
+			group.POST("/image/upload", handlers.UploadQuestion)
+			group.GET("/image/response/:questionNumber", handlers.GetImageResponse)
+		}
 	}
 
-	// Admin-facing routes (Protected by JWT)
-	admin := app.Group("/api")
-	admin.Use(middleware.AuthMiddleware())
-	{
-		// Text Mode Admin
-		admin.GET("/text/logs", handlers.GetAllKeylogs)
-		admin.GET("/text/responses/id/:keylogId", handlers.GetKeylogResponsesByID)
-		admin.POST("/text/responses", handlers.SubmitKeylogResponse)
-		admin.DELETE("/text/logs/:id", handlers.DeleteKeylog)
-		admin.DELETE("/text/responses/all/:keylogId", handlers.DeleteKeylogResponses)
-		admin.DELETE("/text/responses/:id", handlers.DeleteKeylogResponse)
+	// Admin-facing routes
+	adminRoutes := []string{"/api", ""}
+	for _, prefix := range adminRoutes {
+		group := app.Group(prefix)
+		group.Use(middleware.AuthMiddleware())
+		{
+			// Text Mode Admin
+			group.GET("/text/logs", handlers.GetAllKeylogs)
+			group.GET("/text/responses/id/:keylogId", handlers.GetKeylogResponsesByID)
+			group.POST("/text/responses", handlers.SubmitKeylogResponse)
+			group.DELETE("/text/logs/:id", handlers.DeleteKeylog)
+			group.DELETE("/text/responses/all/:keylogId", handlers.DeleteKeylogResponses)
+			group.DELETE("/text/responses/:id", handlers.DeleteKeylogResponse)
 
-		// Image Mode Admin
-		admin.GET("/image/questions", handlers.GetAllQuestions)
-		admin.GET("/image/response/id/:questionId", handlers.GetImageResponsesByID)
-		admin.POST("/image/response", handlers.SubmitResponse)
-		admin.DELETE("/image/questions/:id", handlers.DeleteImage)
-		admin.DELETE("/image/responses/:id", handlers.DeleteImageResponse)
+			// Image Mode Admin
+			group.GET("/image/questions", handlers.GetAllQuestions)
+			group.GET("/image/response/id/:questionId", handlers.GetImageResponsesByID)
+			group.POST("/image/response", handlers.SubmitResponse)
+			group.DELETE("/image/questions/:id", handlers.DeleteImage)
+			group.DELETE("/image/responses/:id", handlers.DeleteImageResponse)
+		}
 	}
 }
 
