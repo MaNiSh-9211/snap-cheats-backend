@@ -77,6 +77,7 @@ func allowedOrigin(origin string) string {
 	}
 	// Hardcoded fallback: your production frontend URL
 	allowed := []string{
+		"https://snapcheats-frontend.vercel.app",
 		"https://snap-cheats-frontend.vercel.app",
 		// Add preview deployment URLs below if needed
 	}
