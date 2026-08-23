@@ -74,13 +74,22 @@ func init() {
 	// 5. NO ROUTE (debug-friendly JSON 404)
 	app.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error":  "route not found",
-			"path":   c.Request.URL.Path,
-			"deploy": "2026-08-23-rewrite-fix",
+			"error":          "route not found",
+			"path":           c.Request.URL.Path,
+			"x-matched-path": c.Request.Header.Get("x-matched-path"),
+			"deploy":         "v2-path-restore",
 		})
 	})
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
+	// Vercel rewrites replace the request path with the destination ("/api/index").
+	// The original path is forwarded via the __path query param in vercel.json.
+	if p := r.URL.Query().Get("__path"); p != "" {
+		r.URL.Path = p
+		q := r.URL.Query()
+		q.Del("__path")
+		r.URL.RawQuery = q.Encode()
+	}
 	app.ServeHTTP(w, r)
 }
