@@ -70,6 +70,15 @@ func init() {
 		adminGroup.DELETE("/image/questions/:id", handlers.DeleteImage)
 		adminGroup.DELETE("/image/responses/:id", handlers.DeleteImageResponse)
 	}
+
+	// 5. NO ROUTE (debug-friendly JSON 404)
+	app.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":  "route not found",
+			"path":   c.Request.URL.Path,
+			"deploy": "2026-08-23-rewrite-fix",
+		})
+	})
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
