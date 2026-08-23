@@ -20,21 +20,25 @@ func Connect() {
 
 	mongoURI := os.Getenv("MONGODB_URI")
 	if mongoURI == "" {
-		log.Fatal("MONGODB_URI not set in environment")
+		log.Println("MONGODB_URI not set in environment - database disabled")
+		return
 	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		log.Fatal(err)
+		log.Println("mongo.Connect failed:", err)
+		return
 	}
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("MongoDB ping failed (check Atlas IP whitelist 0.0.0.0/0 and credentials):", err)
+	} else {
+		log.Println("Connected to MongoDB")
 	}
 
 	Client = client
-	
+
 	keyloggerDBName := os.Getenv("KEYLOGGER_DB_NAME")
 	if keyloggerDBName == "" {
 		keyloggerDBName = "keylogger"

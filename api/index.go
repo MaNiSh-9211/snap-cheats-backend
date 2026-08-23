@@ -37,7 +37,9 @@ func init() {
 
 	// 2. PUBLIC ROUTES
 	app.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"status": "SnapCheats API Online"}) })
-	app.GET("/api/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	app.GET("/api/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "db": db.KeyloggerDB != nil})
+	})
 	app.POST("/api/login", handlers.Login)
 	app.POST("/login", handlers.Login)
 
