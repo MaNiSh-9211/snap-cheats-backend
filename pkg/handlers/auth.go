@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"snap-monolith/backend/internal/db"
-	"snap-monolith/backend/internal/models"
+	"snap-monolith/backend/pkg/db"
+	"snap-monolith/backend/pkg/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"

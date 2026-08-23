@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"snap-monolith/backend/internal/db"
-	"snap-monolith/backend/internal/models"
+	"snap-monolith/backend/pkg/db"
+	"snap-monolith/backend/pkg/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"

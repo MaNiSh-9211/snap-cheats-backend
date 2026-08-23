@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"snap-monolith/backend/internal/db"
-	"snap-monolith/backend/internal/handlers"
-	"snap-monolith/backend/internal/middleware"
+	"snap-monolith/backend/pkg/db"
+	"snap-monolith/backend/pkg/handlers"
+	"snap-monolith/backend/pkg/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
